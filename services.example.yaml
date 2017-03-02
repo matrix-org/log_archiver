@@ -6,5 +6,5 @@ services:
     hosts:
       - hera.matrix.org
     directory: /home/matrix/synapse/var/
-    pattern: *.log.<DATE_>*
+    pattern: "*.log.<DATE->*"
     days_to_keep_on_remote: 2
