@@ -61,18 +61,20 @@ def filter_files(files, days_to_ignore):
 
 
 class Archiver(object):
-    def __init__(self, base_dir, verbose, dry_run, remove):
+    def __init__(self, base_dir, verbose, dry_run, remove, use_ssh_agent):
         """
         Args:
             base_dir(str): Local base path to log files to
             verbose(bool): Print what its doing
             dry_run(bool): Don't actually copy files, just print
             remove(bool): Actually remove remote files
+            use_ssh_agent(bool): Allow SSH client to try keys in SSH agent
         """
         self.base_dir = base_dir
         self.verbose = verbose
         self.dry_run = dry_run
         self.remove = remove
+        self.use_ssh_agent = use_ssh_agent
 
     def archive_service(self, service):
         """Actually do the archiving step for the given Service
@@ -91,7 +93,12 @@ class Archiver(object):
         client = SSHClient()
         # TODO: Use something other than auto add policy?
         client.set_missing_host_key_policy(AutoAddPolicy())
-        client.connect(service.host, username=service.account, compress=True)
+        client.connect(
+            service.host,
+            username=service.account,
+            compress=True,
+            allow_agent=self.use_ssh_agent,
+        )
 
         # Fetch list of files from the remote
         glob = service.pattern.replace("<DATE->", "????-??-??")
@@ -181,6 +188,9 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--remove", help="remove files from remote",
                         action="store_true")
+    parser.add_argument("--use-ssh-agent",
+                        help="allow using keys from ssh agent",
+                        action="store_true")
     args = parser.parse_args()
 
     config_file = args.config
@@ -201,7 +211,9 @@ if __name__ == "__main__":
         for host in serv_config["hosts"]
     ]
 
-    archiver = Archiver(base_dir, args.verbose, args.dry_run, args.remove)
+    archiver = Archiver(
+        base_dir, args.verbose, args.dry_run, args.remove, args.use_ssh_agent
+    )
 
     for service in services:
         if args.verbose:
