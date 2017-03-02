@@ -40,7 +40,7 @@ def filter_files(files, days_to_ignore):
 
     Args:
         files (list(str))
-        days_to_ignore(int): Ignore the last N days off logs
+        days_to_ignore(int): Ignore the last N days of logs
 
     Returns:
         list(str): A list of filenames to pull from remote.
@@ -83,17 +83,18 @@ class Archiver(object):
         if not os.path.exists(base_dir):
             os.makedirs(base_dir)
 
-        if "<DATE_>" not in service.pattern:
-            # We ignore services that don't have a <DATE_> in their pattern
+        if "<DATE->" not in service.pattern:
+            # We ignore services that don't have a <DATE-> in their pattern
             print "Warning:", service.name, "does not include date. Ignoring."
 
         # Connect to remote
         client = SSHClient()
-        client.set_missing_host_key_policy(AutoAddPolicy())  # TODO
+        # TODO: Use something other than auto add policy?
+        client.set_missing_host_key_policy(AutoAddPolicy())
         client.connect(service.host, username=service.account, compress=True)
 
         # Fetch list of files from the remote
-        glob = service.pattern.replace("<DATE_>", "????-??-??")
+        glob = service.pattern.replace("<DATE->", "????-??-??")
         cmd = FIND_COMMAND_TEMPLATE % {
             "dir": service.directory,
             "glob": glob,
@@ -108,7 +109,7 @@ class Archiver(object):
 
         # For each file download to a pending file name (optionally gzipping)
         # and only after it has succesfully been downloaded do we optionally
-        # delete from teh remote.
+        # delete from the remote.
         sftp = client.open_sftp()
         for file_name in files:
             local_name = os.path.join(base_dir, os.path.basename(file_name))
@@ -149,6 +150,7 @@ class Archiver(object):
             if not self.dry_run:
                 # If filename does not end with '.gz' then we compress while
                 # we download
+                # TODO: Should we be preserving last modified times?
                 if not file_name.endswith(".gz"):
                     with gzip.open(pending_name, 'wb', compresslevel=9) as f:
                         sftp.getfo(file_name, f, callback=progress_cb)
