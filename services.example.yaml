@@ -1,0 +1,10 @@
+archive_dir: /mnt/logs/archived
+
+services:
+  synapse:
+    account: matrix
+    hosts:
+      - hera.matrix.org
+    directory: /home/matrix/synapse/var/
+    pattern: *.log.<DATE_>*
+    days_to_keep_on_remote: 2
