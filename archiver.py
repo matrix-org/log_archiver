@@ -35,12 +35,12 @@ Service = namedtuple("Service", (
 ))
 
 
-def filter_by_age(files, comparitor):
+def filter_by_age(files, comparator):
     """Filter files based on the date in their name relative to today.
 
     Args:
         files (list(str)): List of filenames with a date in them
-        comparitor (func): A function that takes a date.timedelta and returns
+        comparator (func): A function that takes a date.timedelta and returns
             a bool that indicates whether to include file in the output list
 
     Returns:
@@ -54,7 +54,7 @@ def filter_by_age(files, comparitor):
             continue
         f_date = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
 
-        if comparitor(today - f_date):
+        if comparator(today - f_date):
             results.append((f_date, f))
 
     results.sort()
