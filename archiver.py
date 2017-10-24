@@ -35,15 +35,16 @@ Service = namedtuple("Service", (
 ))
 
 
-def filter_files(files, days_to_ignore):
-    """Filter files based on the date in the filename
+def filter_by_age(files, comparitor):
+    """Filter files based on the date in their name relative to today.
 
     Args:
-        files (list(str))
-        days_to_ignore(int): Ignore the last N days of logs
+        files (list(str)): List of filenames with a date in them
+        comparitor (func): A function that takes a date.timedelta and returns
+            a bool that indicates whether to include file in the output list
 
     Returns:
-        list(str): A list of filenames to pull from remote.
+        list(str): The filtered list of files
     """
     today = date.today()
     results = []
@@ -53,7 +54,7 @@ def filter_files(files, days_to_ignore):
             continue
         f_date = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
 
-        if (today - f_date).days > days_to_ignore:
+        if comparitor(today - f_date):
             results.append((f_date, f))
 
     results.sort()
@@ -112,7 +113,10 @@ class Archiver(object):
         files.sort()
 
         # Filter the files to ones we want to archive
-        files = filter_files(files, service.days_to_keep_on_remote)
+        files = filter_by_age(
+            files,
+            lambda d: d.days > service.days_to_keep_on_remote
+        )
 
         # For each file download to a pending file name (optionally gzipping)
         # and only after it has succesfully been downloaded do we optionally
@@ -177,6 +181,30 @@ class Archiver(object):
         sftp.close()
         client.close()
 
+        # We now go and delete any files that are older than the retention
+        # period, if specified
+        if service.retention_period_days:
+            service_base_dir = os.path.join(self.base_dir, service.name)
+            local_files = list(
+                os.path.join(dirpath, filename)
+                for dirpath, _, filenames in os.walk(service_base_dir)
+                for filename in filenames
+            )
+
+            files_to_delete = filter_by_age(
+                local_files,
+                lambda d: d.days > service.retention_period_days
+            )
+
+            for file_name in files_to_delete:
+                if self.verbose or self.dry_run:
+                    print "Deleting file due to retention policy: %s" % (
+                        file_name,
+                    )
+
+                if not self.dry_run:
+                    os.remove(file_name)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -205,7 +233,8 @@ if __name__ == "__main__":
             account=serv_config["account"],
             directory=serv_config["directory"],
             pattern=serv_config["pattern"],
-            days_to_keep_on_remote=serv_config["days_to_keep_on_remote"]
+            days_to_keep_on_remote=serv_config["days_to_keep_on_remote"],
+            retention_period_days=serv_config.get("retention_period_days"),
         )
         for name, serv_config in config["services"].iteritems()
         for host in serv_config["hosts"]
