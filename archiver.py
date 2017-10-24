@@ -184,10 +184,9 @@ class Archiver(object):
         # We now go and delete any files that are older than the retention
         # period, if specified
         if service.retention_period_days:
-            service_base_dir = os.path.join(self.base_dir, service.name)
             local_files = list(
                 os.path.join(dirpath, filename)
-                for dirpath, _, filenames in os.walk(service_base_dir)
+                for dirpath, _, filenames in os.walk(base_dir)
                 for filename in filenames
             )
 
