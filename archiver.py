@@ -31,7 +31,7 @@ DATE_REGEX = re.compile("(20[0-9][0-9])-([0-9][0-9])-([0-9][0-9])")
 
 Service = namedtuple("Service", (
     "name", "host", "account", "directory", "pattern",
-    "days_to_keep_on_remote",
+    "days_to_keep_on_remote", "retention_period_days",
 ))
 
 
