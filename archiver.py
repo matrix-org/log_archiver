@@ -39,7 +39,7 @@ def filter_by_age(files, comparator):
     """Filter files based on the date in their name relative to today.
 
     Args:
-        files (iterable(str)): List of filenames with a date in them
+        files (iterable(str)): filenames with a date in them
         comparator (func): A function that takes a date.timedelta and returns
             a bool that indicates whether to include file in the output list
 
